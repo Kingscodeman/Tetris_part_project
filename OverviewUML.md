@@ -15,16 +15,20 @@
 
 ### 🕹️ `TetrisPanel` (遊戲引擎與顯示畫布)
 * **繼承**：`extends JPanel`
-* **職責**：遊戲的核心畫布，負責實際畫出背景與方塊。
+* **職責**：遊戲的核心控制中心，掌握所有繪圖、輸入與遊戲規則（碰撞、消去、計分）。
 * **主要屬性**：
   * `COLS`, `ROWS`, `CELL_SIZE`...：定義棋盤大小與座標的常數 (`static final`)。
-  * `board` (`Color[][]`)：記錄 10x20 棋盤格顏色的二維陣列（目前於第一階段用來繪製空白背景格，尚未實作碰撞）。
-  * `currentPiece` (`Tetromino`)：目前產生並準備在畫面上顯示的測試方塊。
+  * `board` (`Color[][]`)：記錄 10x20 棋盤格顏色的二維陣列，儲存已到底部固定的死方塊。
+  * `currentPiece` (`Tetromino`)：目前正在操控並準備掉落的方塊。
+  * `timer` (`Timer`)：遊戲的心跳，定期觸發方塊下落。
+  * `score`, `linesCleared` (`int`)：記錄玩家目前的分數與消除行數。
 * **核心方法**：
-  * `TetrisPanel()` (建構子)：設定畫布大小、背景色，並呼叫 `randomPiece` 產生第一顆測試方塊。
-  * `randomPiece()`：隨機挑選一個 `TetrominoType` 並回傳全新的 `Tetromino` 實體。
-  * `paintComponent(Graphics g)`：Swing 繪製元件的核心方法。每次畫面需要更新時都會被 JVM 自動呼叫，負責驅動以下的繪圖方法。
-  * `drawBoard()`, `drawCurrentPiece()`, `drawCell()`：將資料抽象邏輯轉換成實際畫面像素的方法。
+  * `TetrisPanel()` (建構子)：初始化畫布，設定鍵盤事件 (`setupKeyBindings`)，並啟動 `Timer`。
+  * `gameStep()`：每次 `Timer` 時間到時執行，負責處理自然下落、碰撞與鎖定。
+  * `isValidPosition()`：核心邏輯！透過陣列運算判斷方塊未來的座標是否撞牆或撞到 `board` 中的方塊。
+  * `moveCurrentPiece()`, `rotateCurrentPiece()`：處理方塊位移與旋轉，依賴 `isValidPosition` 來決定是否放行。
+  * `lockCurrentPiece()`, `clearCompletedLines()`：方塊觸底時將顏色寫入 `board`，並檢查是否可以消除滿排橫列並計分。
+  * `paintComponent(Graphics g)` 與其他 `draw...` 方法：負責將狀態轉換成實際畫面像素。
 
 ### 🧊 `Tetromino` (動態方塊實體)
 * **職責**：代表遊戲場上「活生生」的一個方塊。它純粹是一個輕量級的資料載體 (Data Object)。
@@ -63,7 +67,11 @@
 * **`Tetris` has-a `TetrisPanel`**
   * 主程式擁有一個遊戲面板，把它放進視窗中。
 * **`TetrisPanel` has-a `Tetromino`**
-  * 面板上存在著一個用於測試顯示的靜態方塊 (`currentPiece`)。
+  * 面板上動態記錄著目前正在掉落的方塊 (`currentPiece`)。
+* **`TetrisPanel` has-a `Timer`**
+  * 面板擁有一個計時器，當作遊戲運作的心跳（每隔 500 毫秒跳動一次）。
+* **`TetrisPanel` has-a `Color[][]`**
+  * 面板擁有一個二維顏色陣列，作為「死掉固化的積塊們」的永久記憶體。
 * **`Tetromino` has-a `TetrominoType`**
   * 每個方塊實體，都會對應到一種「形狀種類」（例如：我這個正在落下的方塊，它的種類是 T型）。
 
@@ -71,13 +79,29 @@
 
 ## 3. 主要類別互動流程 (Sequence Overview)
 
-在第一階段中，沒有動態邏輯（沒有計時器或鍵盤事件），以下是啟動視窗時的互動情境：
+目前專案已經具備完整的動態邏輯，包含輸入、碰撞與遊戲迴圈。以下是執行時的三個最核心互動情境：
 
-### 🎬 情境：遊戲啟動與初始化
+### 🎬 情境一：遊戲啟動與初始化
 1. OS 執行 `Tetris.main()`。
-2. `Tetris` 建立 `JFrame` 視窗。
-3. `Tetris` 建立 `TetrisPanel` 物件。
-4. `TetrisPanel` 建構子內：
-   * 向 `TetrominoType` 隨機抽出一種形狀。
-   * 根據該形狀，建立一個新的 `Tetromino` 實體，作為初始測試方塊 (`currentPiece`)。
-5. 視窗顯示，自動喚醒 `TetrisPanel.paintComponent()`，畫出背景格線與該初始測試方塊。
+2. `Tetris` 建立 `JFrame` 視窗與 `TetrisPanel` 物件。
+3. `TetrisPanel` 建構子內：
+   * 設定鍵盤綁定 (`setupKeyBindings`)。
+   * 初始化新的 `Tetromino` 作為初始下落方塊 (`currentPiece`)。
+   * 啟動 `Timer` 定時器來推動遊戲迴圈。
+4. 視窗顯示，自動喚醒 `TetrisPanel.paintComponent()` 畫出初始畫面。
+
+### ⏳ 情境二：自然下落 (Timer 觸發)
+1. `Timer` 時間到，觸發 `TetrisPanel.gameStep()`。
+2. 系統嘗試將 `currentPiece` 的 `y` 座標 +1，並利用 `isValidPosition()` 往未來的位移撞擊做檢查。
+3. **若無碰撞**：更新方塊座標，呼叫 `repaint()` 重繪畫面。
+4. **若發生碰撞 (觸底)**：
+   * 呼叫 `lockCurrentPiece()`，把方塊的顏色寫進 `board` 二維陣列。
+   * 呼叫 `clearCompletedLines()`，掃描 `board` 消去滿橫列並累加掉分數 `score` 與行數。
+   * 產生新的 `currentPiece` 繼續遊戲的下一局迴圈。
+
+### 🎹 情境三：玩家輸入 (鍵盤操作)
+1. 玩家按下「左右方向鍵」或「上方旋轉鍵」。
+2. Java Swing 系統攔截按鍵，觸發 `ActionMap` 中預先綁定的對應方法（如 `moveCurrentPiece` / `rotateCurrentPiece`）。
+3. 系統計算出方塊**預期的未來座標或變更後的旋轉角度**。
+4. 系統將這些未來資訊交給 `isValidPosition()` 檢驗 (確保沒撞到現有牆壁與固化方塊)。
+5. 檢查若為合法，才真正變更 `currentPiece` 中的內部資料，並通知 OS `repaint()` 執行畫面重繪。
