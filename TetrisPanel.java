@@ -50,6 +50,7 @@ class TetrisPanel extends JPanel {
     }
 
     private void startGame() {
+        soundManager.stopBackgroundMusic();
         clearBoard();
         score = 0;
         linesCleared = 0;
@@ -59,6 +60,7 @@ class TetrisPanel extends JPanel {
         centerCurrentPiece();
         timer.setDelay(NORMAL_DROP_DELAY);
         timer.start();
+        soundManager.startBackgroundMusic();
         requestFocusInWindow();
         repaint();
     }
@@ -141,7 +143,7 @@ class TetrisPanel extends JPanel {
         actionMap.put(actionKey, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (!gameOver) {
+                if (!gameOver || "restart".equals(actionKey)) {
                     action.run();
                 }
             }
@@ -280,6 +282,7 @@ class TetrisPanel extends JPanel {
         }
         gameOver = true;
         timer.stop();
+        soundManager.stopBackgroundMusic();
         soundManager.playGameOver();
     }
 
