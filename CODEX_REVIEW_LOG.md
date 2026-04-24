@@ -115,3 +115,54 @@
   * `PROJECT_OVERVIEW.md`
 * **最終結果**：
   整套教學文件與第二階段程式碼完美對齊，有效分離邏輯與圖形的教學概念，為進入最後的第三階段打好基礎。
+
+---
+
+## 紀錄 8：進階至第三階段「完整遊戲體驗與 UI 完善」
+
+* **問題 / 需求**：
+  融合與另一位 AI 協作的成果，補完遊戲視覺與流程體驗。補回右側資訊欄、分數、消除行數、下一個方塊預覽（Next Preview）、影子預判方塊（Ghost Piece）以及 Game Over 畫面與重新開始功能。
+* **討論重點**：
+  在不破壞前兩階段教學基礎的前提下，增加 `TetrisPanel.java` 中繪造進階 UI 的邏輯。遊戲結束後，需讓玩家可以直覺地按 `R` 或 `Enter` 重新開始 (Restart)。
+* **做出的決策**：
+  擴充 `TetrisPanel` 的視覺層 `paintComponent` 以及遊戲狀態旗標。這段時間確認 `Tetris.java` 能夠繼續穩定作為主程式的入口執行。我們也協作檢查了專案內所有檔案，釐清哪些是必要、哪些可以剃除。
+* **修改了哪些檔案**：
+  * `TetrisPanel.java`
+  * `Tetromino.java`
+  * `TetrominoType.java`
+  * `Tetris.java`
+* **最終結果**：
+  專案順利具備完整棋盤、右側資訊欄、Next 預覽與 Ghost Piece，並在 Game Over 後支援按鍵重開，大幅提升可玩性。
+
+---
+
+## 紀錄 9：音效系統整合 (SoundManager) 與編碼修正
+
+* **問題 / 需求**：
+  為遊戲加入聽覺回饋，涵蓋操作音效（移動、旋轉、硬降、消行、Game Over）及背景音樂，提昇沉浸感。同時需徹底解決之前遇到的 `.java` 檔案編碼問題。
+* **討論重點**：
+  將還原出的測試檔 `SoundTest.class` / `SoundTest.java` 轉化並實裝進遊戲專案中。需要確保「背景音樂」與「操作音效」分離，兩者不能互相覆蓋或產生聽覺干擾。
+* **做出的決策**：
+  建立專責處理聲音的 `SoundManager.java`。設定它可以在發動不同事件時被呼叫，並將所有檔案統一強制修正編碼保存。
+* **修改了哪些檔案**：
+  * `SoundTest.java` (還原與測試)
+  * `SoundManager.java` (新建並套用)
+  * `TetrisPanel.java` (放入觸發音效的呼叫邏輯)
+* **最終結果**：
+  音效與背景音樂順利發聲，可透過標準指令 `javac Tetris.java TetrisPanel.java SoundManager.java TetrominoType.java Tetromino.java` 順利編譯，且 `java Tetris` 執行順暢。
+
+---
+
+## 紀錄 10：教學文件整併與反覆迭代
+
+* **問題 / 需求**：
+  將與其他 AI 開發協作所留下的摘要（`CHAT_SUMMARY.md`）吸收進官方日誌 `CODEX_REVIEW_LOG.md`，維持單一知識來源（Single Source of Truth）。
+* **討論重點**：
+  開發階段 3 期間，曾為了教學需要重寫 `progression.md`，後續又按實際需求復原成原本架構版本。這突顯了教材製作過程中的各種嘗試。
+* **做出的決策**：
+  把 `CHAT_SUMMARY.md` 中的紀錄轉化為上述的「紀錄 8」與「紀錄 9」，並把當時歷經修改又復原的文件狀態進行記錄。
+* **修改了哪些檔案**：
+  * `CODEX_REVIEW_LOG.md` (吸收外部會議紀錄)
+  * `progression.md` (過往曾歷經多次重寫與復原)
+* **最終結果**：
+  成功將所有分散的開發討論與實作細節，完美收斂融合在單一份 `CODEX_REVIEW_LOG.md` 文件中。教學紀錄涵蓋從第 1 階段到最終第 3 階段所有的進化演變。
